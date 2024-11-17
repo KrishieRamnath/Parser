@@ -1,27 +1,27 @@
 import nltk
 import sys
 
+
 TERMINALS = """
 Adj -> "country" | "dreadful" | "enigmatical" | "little" | "moist" | "red"
 Adv -> "down" | "here" | "never"
-Conj -> "and" | "until"
+Conj -> "and"
 Det -> "a" | "an" | "his" | "my" | "the"
 N -> "armchair" | "companion" | "day" | "door" | "hand" | "he" | "himself"
 N -> "holmes" | "home" | "i" | "mess" | "paint" | "palm" | "pipe" | "she"
 N -> "smile" | "thursday" | "walk" | "we" | "word"
-P -> "at" | "before" | "in" | "of" | "on" | "to"
+P -> "at" | "before" | "in" | "of" | "on" | "to" | "until"
 V -> "arrived" | "came" | "chuckled" | "had" | "lit" | "said" | "sat"
 V -> "smiled" | "tell" | "were"
 """
 
 NONTERMINALS = """
-S -> NP Pred | S ConjP
-Pred ->  Adv Pred | VP | Pred Adv
-ConjP -> Conj VP | Conj S 
-AP -> Adj N | Adj AP
-NP -> N | AP | Det AP | Det N
-PP -> P NP | PP PP
-VP -> V | V NP | V Adv | V PP | V NP PP
+S -> NP VP | NP VP Conj NP VP | NP VP P NP VP
+VP -> V | V NP | V PP | Adv VP | VP Adv | VP  Conj VP
+NP -> N | Det NP | AP NP | N PP | Conj NP | NP Adv
+AP -> Adj | Adj AP | Adv AP
+PP -> P NP
+
 """
 
 grammar = nltk.CFG.fromstring(NONTERMINALS + TERMINALS)
@@ -68,14 +68,14 @@ def preprocess(sentence):
     and removing any word that does not contain at least one alphabetic
     character.
     """
-    to_be_removed = set()
-    words = nltk.word_tokenize(sentence)
-    for i in range(0, len(words)):
-        words[i] = words[i].lower()
-        if not words[i].islower():
-            to_be_removed.add(words[i])
+    words=[]
 
-    words = [word for word in words if word not in to_be_removed]
+
+    for word in nltk. word_tokenize(sentence):
+        for i in word:
+            if (i.isalpha()):
+                words.append(word.casefold())
+                break
     return words
 
 
@@ -86,12 +86,14 @@ def np_chunk(tree):
     whose label is "NP" that does not itself contain any other
     noun phrases as subtrees.
     """
-    np_chunks = []
-    for subtree in tree.subtrees():
-        if subtree.label() == "NP":
-            np_chunks.append(subtree)
-
-    return np_chunks
+    l=[]
+    for s in tree.subtrees(lambda t: t.label()=="NP"):
+        m=0
+        for i in s.subtrees(lambda t: t.label()=="NP"):
+            m+=1
+        if m==1:
+            l.append(s)
+    return l
 
 
 if __name__ == "__main__":
